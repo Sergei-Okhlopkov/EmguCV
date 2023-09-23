@@ -28,7 +28,7 @@ namespace EmguCV
             InitializeComponent();
         }
 
-        private void PoseEstimationBody_25()
+        private Mat PoseEstimationBody_25(Mat image)
         {
             try
             {
@@ -80,15 +80,13 @@ namespace EmguCV
 
                 string currentDir = Directory.GetCurrentDirectory();
 
-                img = new Mat(path);
-
                 // Load the caffe Model
                 string prototxt = @".\..\..\..\openCV\models\pose_deploy.prototxt";
                 string modelPath = @".\..\..\..\openCV\models\pose_iter_584000.caffemodel";
 
                 var net = DnnInvoke.ReadNetFromCaffe(prototxt, modelPath);
 
-                var blob = DnnInvoke.BlobFromImage(img, 1.0 / 255.0, new Size(inWidth, inHeight), new MCvScalar(0, 0, 0));
+                var blob = DnnInvoke.BlobFromImage(image, 1.0 / 255.0, new Size(inWidth, inHeight), new MCvScalar(0, 0, 0));
                 net.SetInput(blob);
                 net.SetPreferableBackend(Emgu.CV.Dnn.Backend.OpenCV);
 
@@ -116,8 +114,8 @@ namespace EmguCV
 
                     CvInvoke.MinMaxLoc(matrix, ref minVal, ref maxVal, ref minLoc, ref maxLoc);
 
-                    var x = (img.Width * maxLoc.X) / W;
-                    var y = (img.Height * maxLoc.Y) / H;
+                    var x = (image.Width * maxLoc.X) / W;
+                    var y = (image.Height * maxLoc.Y) / H;
 
                     if (maxVal > threshold)
                     {
@@ -135,8 +133,8 @@ namespace EmguCV
                     var p = points[i];
                     if (p != Point.Empty)
                     {
-                        CvInvoke.Circle(img, p, 5, new MCvScalar(0, 255, 0), -1);
-                        CvInvoke.PutText(img, i.ToString(), p, FontFace.HersheySimplex, 0.8, new MCvScalar(0, 0, 255), 1, LineType.AntiAlias);
+                        CvInvoke.Circle(image, p, 5, new MCvScalar(0, 255, 0), -1);
+                        CvInvoke.PutText(image, i.ToString(), p, FontFace.HersheySimplex, 0.8, new MCvScalar(0, 0, 255), 1, LineType.AntiAlias);
                     }
                 }
 
@@ -151,18 +149,18 @@ namespace EmguCV
                         points[startIndex].X != 0 && points[startIndex].Y != 0 &&
                         points[endIndex].X != 0 && points[endIndex].Y != 0)
                     {
-                        CvInvoke.Line(img, points[startIndex], points[endIndex], new MCvScalar(255, 255, 0), 5);
+                        CvInvoke.Line(image, points[startIndex], points[endIndex], new MCvScalar(255, 255, 0), 5);
                     }
                 }
 
-                //img.Save($"Sceleton{DateTime.Now.Second}.jpg");
-                picShow.Image = img.ToImage<Bgr, Byte>().ToBitmap<Bgr, Byte>();
+                //picShow.Image = img.ToImage<Bgr, Byte>().ToBitmap<Bgr, Byte>();
 
             }
             catch (Exception ex)
             {
                 MessageBox.Show(ex.Message);
             }
+            return image;
         }
 
         private void ChooseClick(object sender, EventArgs e)
@@ -195,7 +193,8 @@ namespace EmguCV
 
         private void FindPoseClick(object sender, EventArgs e)
         {
-            PoseEstimationBody_25();
+            img = PoseEstimationBody_25(img);
+            picShow.Image = img.ToImage<Bgr, Byte>().ToBitmap<Bgr, Byte>();
         }
 
         private void SaveRecognizedPosePhoto(object sender, EventArgs e)
@@ -276,9 +275,11 @@ namespace EmguCV
             {
                 Mat m = new Mat();
 
-                videoCapture.Retrieve(m);
-                
-                videoBox.Image = m.ToImage<Bgr, Byte>().Flip(FlipType.Horizontal).ToBitmap();
+                //videoCapture.Retrieve(m);
+
+                Mat estimated = PoseEstimationBody_25(videoCapture.QueryFrame());
+
+                videoBox.Image = estimated.ToImage<Bgr, Byte>().Flip(FlipType.Horizontal).ToBitmap();
             }
             catch (Exception ex)
             {
