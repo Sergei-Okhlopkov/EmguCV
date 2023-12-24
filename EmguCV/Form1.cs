@@ -1,5 +1,6 @@
 ﻿using DirectShowLib;
 using Emgu.CV;
+using Emgu.CV.Cuda;
 using Emgu.CV.CvEnum;
 using Emgu.CV.Dnn;
 using Emgu.CV.Structure;
@@ -85,7 +86,6 @@ namespace EmguCV
                 string modelPath = @".\..\..\..\openCV\models\pose_iter_584000.caffemodel";
 
                 var net = DnnInvoke.ReadNetFromCaffe(prototxt, modelPath);
-
                 var blob = DnnInvoke.BlobFromImage(image, 1.0 / 255.0, new Size(inWidth, inHeight), new MCvScalar(0, 0, 0));
                 net.SetInput(blob);
                 net.SetPreferableBackend(Emgu.CV.Dnn.Backend.OpenCV);
@@ -101,6 +101,7 @@ namespace EmguCV
                 for (int i = 0; i < nPoints; i++)
                 {
                     Matrix<float> matrix = new Matrix<float>(H, W);
+                   
                     for (int row = 0; row < H; row++)
                     {
                         for (int col = 0; col < W; col++)
@@ -152,9 +153,6 @@ namespace EmguCV
                         CvInvoke.Line(image, points[startIndex], points[endIndex], new MCvScalar(255, 255, 0), 5);
                     }
                 }
-
-                //picShow.Image = img.ToImage<Bgr, Byte>().ToBitmap<Bgr, Byte>();
-
             }
             catch (Exception ex)
             {
@@ -187,6 +185,7 @@ namespace EmguCV
             }
 
             Image originalImage = Image.FromFile(path);
+            img = CvInvoke.Imread(path, Emgu.CV.CvEnum.ImreadModes.AnyColor);
 
             picChoose.Image = originalImage;
         }
@@ -237,8 +236,7 @@ namespace EmguCV
         {
             selectedCameraId = cameraCMB.SelectedIndex;
         }
-
-
+ 
         private void startBtn_Click(object sender, EventArgs e)
         {
             try
@@ -273,10 +271,6 @@ namespace EmguCV
         {
             try
             {
-                Mat m = new Mat();
-
-                //videoCapture.Retrieve(m);
-
                 Mat estimated = PoseEstimationBody_25(videoCapture.QueryFrame());
 
                 videoBox.Image = estimated.ToImage<Bgr, Byte>().Flip(FlipType.Horizontal).ToBitmap();
